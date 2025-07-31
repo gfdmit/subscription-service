@@ -11,5 +11,5 @@ type Repository interface {
 	GetSubscription(ctx context.Context, id int) (*model.Subscription, error)
 	GetSubscriptions(ctx context.Context) ([]model.Subscription, error)
 	UpdateSubscription(ctx context.Context, id int, subscription model.Subscription) (*model.Subscription, error)
-	DeleteSubscription(ctx context.Context, id int) (bool, error)
+	DeleteSubscription(ctx context.Context, id int) (*model.Subscription, error)
 }

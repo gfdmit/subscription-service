@@ -26,6 +26,10 @@ func New(svc service.Service) *gin.Engine {
 
 	restHandler := rest.New(svc)
 
+	router.Any("/ping", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
 	api := router.Group("/api")
 	{
 		api.Use(gin.Logger())
@@ -39,10 +43,6 @@ func New(svc service.Service) *gin.Engine {
 				subscriptions.DELETE("/:id", restHandler.DeleteSubscription)
 				subscriptions.PUT("/:id", restHandler.UpdateSubscription)
 			}
-
-			v1.Any("/ping", func(c *gin.Context) {
-				c.Status(http.StatusOK)
-			})
 		}
 	}
 

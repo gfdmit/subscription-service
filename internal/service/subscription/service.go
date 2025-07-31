@@ -31,6 +31,6 @@ func (ss subscriptionService) UpdateSubscription(ctx context.Context, id int, su
 	return ss.repo.UpdateSubscription(ctx, id, subscription)
 }
 
-func (ss subscriptionService) DeleteSubscription(ctx context.Context, id int) (bool, error) {
+func (ss subscriptionService) DeleteSubscription(ctx context.Context, id int) (*model.Subscription, error) {
 	return ss.repo.DeleteSubscription(ctx, id)
 }

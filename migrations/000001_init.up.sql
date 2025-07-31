@@ -1,7 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS subscriptions;
 
 CREATE TABLE IF NOT EXISTS subscriptions.subscriptions (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     service_name TEXT NOT NULL,
     price INTEGER NOT NULL,
     user_id UUID NOT NULL,
@@ -11,4 +11,4 @@ CREATE TABLE IF NOT EXISTS subscriptions.subscriptions (
 
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions.subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_service_name ON subscriptions.subscriptions(service_name);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_start_date ON subscriptions.subscriptions(start_date);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_start_date ON subscriptions.subscriptions(start_date, end_date);

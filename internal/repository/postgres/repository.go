@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"strconv"
 
 	"github.com/gfdmit/subscription-service/config"
 	"github.com/gfdmit/subscription-service/internal/model"
@@ -22,7 +21,8 @@ type postgresRepository struct {
 	pool *pgxpool.Pool
 }
 
-func New(conf config.Config, ctx context.Context) (*postgresRepository, error) {
+func New(conf config.Config) (*postgresRepository, error) {
+	ctx := context.Background()
 	connString := fmt.Sprintf(
 		"postgresql://%v:%v@%v:%v/%v?sslmode=%v",
 		conf.Postgres.User,
@@ -80,10 +80,20 @@ func New(conf config.Config, ctx context.Context) (*postgresRepository, error) {
 	}, nil
 }
 
+func initPoolConf(conf config.Config, connString string) (*pgxpool.Config, error) {
+	poolConf, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, fmt.Errorf("pgxpool.ParseConfig: %v", err)
+	}
+	poolConf.MaxConns = conf.MaxConns
+	poolConf.MinConns = conf.MinConns
+	poolConf.MaxConnLifetime = conf.MaxLifetime
+	poolConf.HealthCheckPeriod = conf.HealthCheck
+	return poolConf, err
+}
+
 func (pr postgresRepository) CreateSubscription(ctx context.Context, subscription model.Subscription) (*model.Subscription, error) {
-	var (
-		subs model.Subscription
-	)
+	var subs model.Subscription
 	row := pr.pool.QueryRow(
 		ctx,
 		createSubscriptionQuery,
@@ -158,7 +168,8 @@ func (pr postgresRepository) GetSubscriptions(ctx context.Context) ([]model.Subs
 }
 
 func (pr postgresRepository) UpdateSubscription(ctx context.Context, id int, subscription model.Subscription) (*model.Subscription, error) {
-	pr.pool.QueryRow(
+	subs := model.Subscription{}
+	row := pr.pool.QueryRow(
 		ctx,
 		updateSubscriptionQuery,
 		subscription.ServiceName,
@@ -168,27 +179,37 @@ func (pr postgresRepository) UpdateSubscription(ctx context.Context, id int, sub
 		subscription.EndDate,
 		id,
 	)
-	subscription.ID = strconv.Itoa(id)
-	return &subscription, nil
+	err := row.Scan(
+		&subs.ID,
+		&subs.ServiceName,
+		&subs.Price,
+		&subs.UserID,
+		&subs.StartDate,
+		&subs.EndDate,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("row.Scan: %v", err)
+	}
+	return &subs, nil
 }
 
-func (pr postgresRepository) DeleteSubscription(ctx context.Context, id int) (bool, error) {
-	pr.pool.QueryRow(
+func (pr postgresRepository) DeleteSubscription(ctx context.Context, id int) (*model.Subscription, error) {
+	subs := model.Subscription{}
+	row := pr.pool.QueryRow(
 		ctx,
 		deleteSubscriptionQuery,
 		id,
 	)
-	return true, nil
-}
-
-func initPoolConf(conf config.Config, connString string) (*pgxpool.Config, error) {
-	poolConf, err := pgxpool.ParseConfig(connString)
+	err := row.Scan(
+		&subs.ID,
+		&subs.ServiceName,
+		&subs.Price,
+		&subs.UserID,
+		&subs.StartDate,
+		&subs.EndDate,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("pgxpool.ParseConfig: %v", err)
+		return nil, fmt.Errorf("row.Scan: %v", err)
 	}
-	poolConf.MaxConns = conf.MaxConns
-	poolConf.MinConns = conf.MinConns
-	poolConf.MaxConnLifetime = conf.MaxLifetime
-	poolConf.HealthCheckPeriod = conf.HealthCheck
-	return poolConf, err
+	return &subs, nil
 }

@@ -36,7 +36,7 @@ type HTTPServer struct {
 type Pool struct {
 	MaxConns    int32         `env:"POOL_MAX_CONNS" env-default:"20"`
 	MinConns    int32         `env:"POOL_MIN_CONNS" env-default:"5"`
-	MaxLifetime time.Duration `env:"POOL_MAX_LIFETIME" env-default:"1h"`
+	MaxLifetime time.Duration `env:"POOL_MAX_LIFETIME" env-default:"1s"`
 	HealthCheck time.Duration `env:"POOL_HEALTH_CHECK" env-default:"1m"`
 }
 

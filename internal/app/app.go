@@ -14,7 +14,7 @@ import (
 func Run(conf config.Config) error {
 	ctx := context.Background()
 
-	repo, err := postgres.New(conf, ctx)
+	repo, err := postgres.New(conf)
 	if err != nil {
 		return fmt.Errorf("error when setting up repository: %v", err)
 	}
