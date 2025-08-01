@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"errors"
 
 	"github.com/gfdmit/subscription-service/internal/model"
 	"github.com/gfdmit/subscription-service/internal/repository"
@@ -16,6 +17,9 @@ func New(repo repository.Repository) *subscriptionService {
 }
 
 func (ss subscriptionService) CreateSubscription(ctx context.Context, subscription model.Subscription) (*model.Subscription, error) {
+	if subscription.Price < 0 {
+		return nil, errors.New("price is negative")
+	}
 	return ss.repo.CreateSubscription(ctx, subscription)
 }
 
@@ -33,4 +37,8 @@ func (ss subscriptionService) UpdateSubscription(ctx context.Context, id int, su
 
 func (ss subscriptionService) DeleteSubscription(ctx context.Context, id int) (*model.Subscription, error) {
 	return ss.repo.DeleteSubscription(ctx, id)
+}
+
+func (ss subscriptionService) GetAmount(ctx context.Context, activeParams map[string]string) (int, error) {
+	return ss.repo.GetAmount(ctx, activeParams)
 }

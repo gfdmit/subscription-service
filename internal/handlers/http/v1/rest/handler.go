@@ -18,6 +18,18 @@ func New(svc service.Service) *restHandler {
 	return &restHandler{svc: svc}
 }
 
+//	    CreateSubscriptions godoc
+//
+//		@Summary		Create subscriptions
+//		@Description	create subscription
+//		@Accept			json
+//		@Produce		json
+//		@Param			Subscriptions   body	model.Subscription	true	"Create Subscription"
+//		@Success		200	{object}	model.Subscription
+//		@Failure		400	{object}	error
+//		@Failure		404	{object}	error
+//		@Failure		500	{object}	error
+//		@Router			/subscriptions/{id} [post]
 func (rh restHandler) CreateSubscription(c *gin.Context) {
 	var subscription model.Subscription
 	if err := c.ShouldBindJSON(&subscription); err != nil {
@@ -93,4 +105,41 @@ func (rh restHandler) DeleteSubscription(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, isDeleted)
+}
+
+func (rh restHandler) GetAmount(c *gin.Context) {
+	activeParams := map[string]string{}
+
+	startDate, ok := c.GetQuery("start_date")
+	if !ok {
+		utils.Error(c, "there no start date")
+		return
+	} else {
+		activeParams["start_date"] = startDate
+	}
+
+	endDate, ok := c.GetQuery("end_date")
+	if !ok {
+		utils.Error(c, "there no end date")
+		return
+	} else {
+		activeParams["end_date"] = endDate
+	}
+
+	userID, ok := c.GetQuery("user_id")
+	if ok {
+		activeParams["user_id"] = userID
+	}
+
+	service, ok := c.GetQuery("service_name")
+	if ok {
+		activeParams["service"] = service
+	}
+
+	amount, err := rh.svc.GetAmount(c.Request.Context(), activeParams)
+	if err != nil {
+		utils.Error(c, err.Error())
+	}
+
+	c.JSON(http.StatusOK, amount)
 }

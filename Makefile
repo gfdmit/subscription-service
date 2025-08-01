@@ -1,5 +1,5 @@
 run:
-	go run cmd/main.go
+	go run cmd/subscription-service/main.go
 
 up:
 	docker-compose up -d --build

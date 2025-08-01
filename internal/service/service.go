@@ -12,4 +12,5 @@ type Service interface {
 	GetSubscriptions(ctx context.Context) ([]model.Subscription, error)
 	UpdateSubscription(ctx context.Context, id int, subscription model.Subscription) (*model.Subscription, error)
 	DeleteSubscription(ctx context.Context, id int) (*model.Subscription, error)
+	GetAmount(ctx context.Context, activeParams map[string]string) (int, error)
 }

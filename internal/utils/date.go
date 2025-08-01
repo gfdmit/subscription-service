@@ -12,25 +12,33 @@ type CustomDate struct {
 	time.Time
 }
 
-func (c *CustomDate) UnmarshalJSON(b []byte) error {
-	s := strings.Trim(string(b), "\"")
+func (c *CustomDate) UnmarshalJSON(b []byte) (err error) {
+	c.Time, err = CustomDateToTime(string(b))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CustomDateToTime(customDate string) (time.Time, error) {
+	s := strings.Trim(customDate, "\"")
 	if s == "null" {
-		return nil
+		return time.Time{}, nil
 	}
 
 	tokens := strings.Split(s, "-")
 	month, err := strconv.Atoi(tokens[0])
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 
 	year, err := strconv.Atoi(tokens[1])
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 
-	c.Time = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-	return nil
+	date := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	return date, nil
 }
 
 func (c CustomDate) MarshalJSON() ([]byte, error) {

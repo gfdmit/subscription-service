@@ -16,7 +16,7 @@ func Run(conf config.Config) error {
 
 	repo, err := postgres.New(conf)
 	if err != nil {
-		return fmt.Errorf("error when setting up repository: %v", err)
+		return fmt.Errorf("error when setting up repository: %w", err)
 	}
 
 	service := subscription.New(repo)

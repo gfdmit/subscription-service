@@ -8,4 +8,5 @@ type Handler interface {
 	GetSubscriptions(c *gin.Context)
 	UpdateSubscription(c *gin.Context)
 	DeleteSubscription(c *gin.Context)
+	GetAmount(c *gin.Context)
 }

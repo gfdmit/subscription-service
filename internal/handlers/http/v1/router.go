@@ -8,7 +8,20 @@ import (
 	"github.com/gfdmit/subscription-service/internal/service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+//	@title			Subscription service
+//	@version		1.0
+//	@description	This is a CRUD service for subscriptions.
+
+//	@contact.name	Zyalaev Radmir
+//	@contact.email	zyalaevradmir@gmail.com
+
+//  @host		    localhost:8080
+//  @BasePath	    /api/v1
 
 func New(svc service.Service) *gin.Engine {
 	var (
@@ -26,10 +39,6 @@ func New(svc service.Service) *gin.Engine {
 
 	restHandler := rest.New(svc)
 
-	router.Any("/ping", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-
 	api := router.Group("/api")
 	{
 		api.Use(gin.Logger())
@@ -42,9 +51,16 @@ func New(svc service.Service) *gin.Engine {
 				subscriptions.GET("", restHandler.GetSubscriptions)
 				subscriptions.DELETE("/:id", restHandler.DeleteSubscription)
 				subscriptions.PUT("/:id", restHandler.UpdateSubscription)
+				subscriptions.GET("/amount", restHandler.GetAmount)
 			}
 		}
 	}
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	router.Any("/ping", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
 
 	return router
 }

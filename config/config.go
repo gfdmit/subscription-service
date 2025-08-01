@@ -44,11 +44,11 @@ func New(env string) (*Config, error) {
 	conf := &Config{}
 
 	if err := godotenv.Overload(env); err != nil {
-		return nil, fmt.Errorf("godotenv.Overload: %v", err)
+		return nil, fmt.Errorf("godotenv.Overload: %w", err)
 	}
 
 	if err := cleanenv.ReadEnv(conf); err != nil {
-		return nil, fmt.Errorf("cleanenv.Readenv: %v", err)
+		return nil, fmt.Errorf("cleanenv.Readenv: %w", err)
 	}
 
 	return conf, nil

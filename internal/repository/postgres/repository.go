@@ -10,6 +10,7 @@ import (
 
 	"github.com/gfdmit/subscription-service/config"
 	"github.com/gfdmit/subscription-service/internal/model"
+	"github.com/gfdmit/subscription-service/internal/utils"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -54,13 +55,13 @@ func New(conf config.Config) (*postgresRepository, error) {
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("postgers.WithInstance: %v", err)
+		return nil, fmt.Errorf("postgers.WithInstance: %w", err)
 	}
 
 	migrations := fmt.Sprintf("file://%v", conf.Migrations)
 	m, err := migrate.NewWithDatabaseInstance(migrations, conf.DB, driver)
 	if err != nil {
-		return nil, fmt.Errorf("migrate.NewWithDatabaseInstance: %v", err)
+		return nil, fmt.Errorf("migrate.NewWithDatabaseInstance: %w", err)
 	}
 	defer m.Close()
 
@@ -69,7 +70,7 @@ func New(conf config.Config) (*postgresRepository, error) {
 		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("nothing to migrate")
 		} else {
-			return nil, fmt.Errorf("error when migrating: %v", err)
+			return nil, fmt.Errorf("error when migrating: %w", err)
 		}
 	} else {
 		log.Println("migrated successfully!")
@@ -83,7 +84,7 @@ func New(conf config.Config) (*postgresRepository, error) {
 func initPoolConf(conf config.Config, connString string) (*pgxpool.Config, error) {
 	poolConf, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		return nil, fmt.Errorf("pgxpool.ParseConfig: %v", err)
+		return nil, fmt.Errorf("pgxpool.ParseConfig: %w", err)
 	}
 	poolConf.MaxConns = conf.MaxConns
 	poolConf.MinConns = conf.MinConns
@@ -112,7 +113,7 @@ func (pr postgresRepository) CreateSubscription(ctx context.Context, subscriptio
 		&subs.EndDate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("row.Scan: %v", err)
+		return nil, fmt.Errorf("row.Scan: %w", err)
 	}
 	return &subs, nil
 }
@@ -133,7 +134,7 @@ func (pr postgresRepository) GetSubscription(ctx context.Context, id int) (*mode
 		&subscription.EndDate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("row.Scan: %v", err)
+		return nil, fmt.Errorf("row.Scan: %w", err)
 	}
 	return &subscription, nil
 }
@@ -145,7 +146,7 @@ func (pr postgresRepository) GetSubscriptions(ctx context.Context) ([]model.Subs
 		getSubscriptionsQuery,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("pool.Query: %v", err)
+		return nil, fmt.Errorf("pool.Query: %w", err)
 	}
 	defer rows.Close()
 
@@ -160,7 +161,7 @@ func (pr postgresRepository) GetSubscriptions(ctx context.Context) ([]model.Subs
 			&subscription.EndDate,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("rows.Scan: %v", err)
+			return nil, fmt.Errorf("rows.Scan: %w", err)
 		}
 		subscriptions = append(subscriptions, subscription)
 	}
@@ -188,7 +189,7 @@ func (pr postgresRepository) UpdateSubscription(ctx context.Context, id int, sub
 		&subs.EndDate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("row.Scan: %v", err)
+		return nil, fmt.Errorf("row.Scan: %w", err)
 	}
 	return &subs, nil
 }
@@ -209,7 +210,50 @@ func (pr postgresRepository) DeleteSubscription(ctx context.Context, id int) (*m
 		&subs.EndDate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("row.Scan: %v", err)
+		return nil, fmt.Errorf("row.Scan: %w", err)
 	}
 	return &subs, nil
+}
+
+func (pr postgresRepository) GetAmount(ctx context.Context, activeParams map[string]string) (int, error) {
+	var amount sql.NullInt64
+	start_date, err := utils.CustomDateToTime(activeParams["start_date"])
+	if err != nil {
+		return 0, fmt.Errorf("utils.CustomDateToTime: %w", err)
+	}
+
+	end_date, err := utils.CustomDateToTime(activeParams["end_date"])
+	if err != nil {
+		return 0, fmt.Errorf("utils.CustomDateToTime: %w", err)
+	}
+
+	getAmountQuery := fmt.Sprintf(`
+		SELECT SUM(price) FROM subscriptions.subscriptions
+		WHERE start_date BETWEEN '%v' AND '%v'
+		`,
+		start_date.Format("2006-01-02"),
+		end_date.Format("2006-01-02"),
+	)
+	userID, ok := activeParams["user_id"]
+	if ok {
+		getAmountQuery += fmt.Sprintf("AND user_id = '%v'", userID)
+	}
+	service, ok := activeParams["service"]
+	if ok {
+		getAmountQuery += fmt.Sprintf("AND service_name = '%v'", service)
+	}
+	row := pr.pool.QueryRow(
+		ctx,
+		getAmountQuery,
+	)
+
+	err = row.Scan(&amount)
+	if err != nil {
+		return 0, fmt.Errorf("row.Scan: %w", err)
+	}
+
+	if !amount.Valid {
+		return 0, nil
+	}
+	return int(amount.Int64), nil
 }
